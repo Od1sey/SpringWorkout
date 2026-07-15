@@ -10,11 +10,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-test {
-    useJUnitPlatform()
+    implementation("org.springframework:spring-context:7.0.8")
+    implementation("org.springframework:spring-jdbc:7.0.8")
+    implementation("org.postgresql:postgresql:42.7.13")
 }
