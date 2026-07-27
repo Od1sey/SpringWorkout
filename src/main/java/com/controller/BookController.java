@@ -1,14 +1,11 @@
-package com.contoller;
+package com.controller;
 
 import com.entity.Book;
 import com.service.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.List;
 import java.util.Scanner;
 
@@ -30,19 +27,19 @@ public class BookController {
             System.out.print("""
                     
                     === Menu ===\s
-                    1. Add record\s
-                    2. List records\s
-                    3. Find record\s
-                    4. Exit\s
+                    Type "add" to add a record\s
+                    Type "list" to list all records\s
+                    Type "find" to find a record\s
+                    Type "exit" to exit the program\s
                     ===========
                     
                     """);
             String input = scanner.nextLine().trim();
             switch (input){
-                case "1" -> startNewRecordMenu();
-                case "2" -> printAllRecords();
-                case "3" -> startFindRecordMenu();
-                case "4" -> isRunning = false;
+                case "add" -> startNewRecordMenu();
+                case "list" -> printAllRecords();
+                case "find" -> startFindRecordMenu();
+                case "exit" -> isRunning = false;
                 default -> System.out.println("Unknown command. Try again.");
             }
         }
