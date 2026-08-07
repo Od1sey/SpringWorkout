@@ -1,6 +1,7 @@
 package com;
 
-import com.controller.BookController;
+import com.controller.MainMenuController;
+import com.repository.AuthorRepo;
 import com.repository.BookRepo;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
@@ -12,12 +13,15 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class ConsoleApp {
     static void main() {
         AnnotationConfigApplicationContext appContext = new AnnotationConfigApplicationContext(ConsoleApp.class);
-        JdbcTemplate jdbcTemplate = appContext.getBean(JdbcTemplate.class);
-        BookController bookController = appContext.getBean(BookController.class);
         BookRepo bookRepo = appContext.getBean(BookRepo.class);
+        AuthorRepo authorRepo = appContext.getBean(AuthorRepo.class);
+        MainMenuController mainMenuController = appContext.getBean(MainMenuController.class);
 
         bookRepo.initiateDatabase();
-        bookController.startMainMenu();
+        authorRepo.initiateDatabase();
+
+        mainMenuController.startMenu();
+
         appContext.close();
     }
 }
