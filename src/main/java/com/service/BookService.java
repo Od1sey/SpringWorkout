@@ -24,6 +24,9 @@ public class BookService {
         String name = parts[0];
         int publishYear;
         int authorId;
+        if (parts.length!=3){
+            throw new IllegalArgumentException("Wrong book info provided.");
+        }
         try {
             publishYear = Integer.parseInt(parts[1]);
         } catch (NumberFormatException ex) {

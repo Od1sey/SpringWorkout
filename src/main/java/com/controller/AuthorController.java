@@ -2,7 +2,6 @@ package com.controller;
 
 import com.dto.AuthorWithBooksDTO;
 import com.entity.Author;
-import com.entity.Book;
 import com.service.AuthorService;
 import com.service.LibraryService;
 import org.springframework.stereotype.Controller;
@@ -71,13 +70,7 @@ public class AuthorController {
             } else {
                 try {
                     Author newAuthor = authorService.buildAuthor(input);
-                    AuthorWithBooksDTO dto = new AuthorWithBooksDTO(newAuthor);
-                    startAddBooksMenu(dto);
-                    authorService.createRecord(dto);
-                    String message = dto.getBooks().isEmpty()
-                            ? "Author %s was added".formatted(newAuthor.getFullName())
-                            : "Author %s was added along with %d books".formatted(newAuthor.getFirstName(), dto.getBooks().size());
-                    System.out.println(message);
+                    startAddBooksMenu(newAuthor);
                     isAddingNewRecord = false;
                 } catch (IllegalArgumentException ex) {
                     System.out.println("\n" + ex.getMessage() + "\n");
@@ -160,7 +153,7 @@ public class AuthorController {
                 System.out.println(String.format("(id: %s) %s", author.getId(), author.getFullName())));
     }
 
-    private void startAddBooksMenu(AuthorWithBooksDTO dto) {
+    private void startAddBooksMenu(Author newAuthor) {
         boolean isAddingBooks = true;
         while (isAddingBooks) {
             System.out.print("""
@@ -198,8 +191,11 @@ public class AuthorController {
                         isAddingBooks = false;
                     } else {
                         try {
-                            List<Book> authorBookList = authorService.buildAuthorBookList(input);
-                            dto.setBooks(authorBookList);
+                            AuthorWithBooksDTO dto = libraryService.createAuthorWithBooks(newAuthor, input);
+                            String message = dto.getBooks().isEmpty()
+                            ? "Author %s was added".formatted(newAuthor.getFullName())
+                            : "Author %s was added along with %d books".formatted(newAuthor.getFirstName(), dto.getBooks().size());
+                                System.out.println(message);
                             isAddingBookList = false;
                             isAddingBooks = false;
                         } catch (IllegalArgumentException ex) {
@@ -207,7 +203,11 @@ public class AuthorController {
                         }
                     }
                 }
-            } else if ("n".equalsIgnoreCase(input)) isAddingBooks = false;
+            } else if ("n".equalsIgnoreCase(input)){
+                authorService.createRecord(newAuthor);
+                System.out.println(newAuthor.getFullName() + " was added");
+                isAddingBooks = false;
+            }
         }
     }
 }

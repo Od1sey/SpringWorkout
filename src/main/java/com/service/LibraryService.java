@@ -5,7 +5,9 @@ import com.entity.Author;
 import com.entity.Book;
 import com.util.ParseUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -31,10 +33,10 @@ public class LibraryService {
         String[] parts = input.split("\\s*,\\s*");
         int bookId = ParseUtils.parseInt(parts[0], "'%s' is invalid book id".formatted(parts[0]));
         int authorId = ParseUtils.parseInt(parts[1], "'%s' is author book id".formatted(parts[1]));
-        Book book = bookService.getRecordById(bookId)
-                .orElseThrow(() -> new IllegalArgumentException("Book with id %s doesn't exist".formatted(bookId)));
         Author author = authorService.getRecordById(authorId)
                 .orElseThrow(() -> new IllegalArgumentException("Author with id %s doesn't exist".formatted(authorId)));
+        Book book = bookService.getRecordById(bookId)
+                .orElseThrow(() -> new IllegalArgumentException("Book with id %s doesn't exist".formatted(bookId)));
         bookService.updateRecordAuthor(bookId, authorId);
         System.out.printf("Book %s (id: %d) was assigned to %s (id: %d) \n",
                 book.getName(), book.getId(), author.getFullName(), author.getId());
@@ -51,6 +53,28 @@ public class LibraryService {
                     .formatted(author.getFullName(), authorBooks.size()));
         }
         authorService.delete(authorId);
+    }
+
+    @Transactional
+    public AuthorWithBooksDTO createAuthorWithBooks(Author newAuthor, String booksInput){
+        if (newAuthor == null){
+            throw new IllegalArgumentException("Author must be provided");
+        }
+        if (booksInput==null || booksInput.isEmpty()){
+            throw new IllegalArgumentException("You did not provide any book info");
+        }
+        Author createdAuthor = authorService.createRecord(newAuthor);
+        List<Book> authorBookList = new ArrayList<>();
+        String[] books = booksInput.split("\\s*;\\s*");
+        for (String book : books) {
+            book = "%s, %s".formatted(book, createdAuthor.getId());
+            authorBookList.add(bookService.buildBook(book));
+        }
+        for (Book book : authorBookList){
+            book.setAuthorId(createdAuthor.getId());
+            bookService.createRecord(book);
+        }
+        return new AuthorWithBooksDTO(createdAuthor, authorBookList);
     }
 
 }
