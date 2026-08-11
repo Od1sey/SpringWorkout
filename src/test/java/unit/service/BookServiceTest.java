@@ -41,7 +41,10 @@ public class BookServiceTest {
     @Test
     void shouldBuildBook() {
         String bookInput = "Book name, 2015, 1";
-        assertDoesNotThrow(() -> bookService.buildBook(bookInput));
+        Book builtBook = bookService.buildBook(bookInput);
+        assertEquals("Book name", builtBook.getName());
+        assertEquals(2015, builtBook.getPublishYear());
+        assertEquals(1, builtBook.getAuthorId());
     }
 
     @Test
@@ -51,7 +54,7 @@ public class BookServiceTest {
                 new Book("Second test book", 2026));
         when(bookRepo.getAll()).thenReturn(mockBooks);
         assertEquals(bookRepo.getAll(), mockBooks);
-        verify(bookRepo).getAll();
+        verify(bookService).getAllRecords();
     }
 
     @ParameterizedTest

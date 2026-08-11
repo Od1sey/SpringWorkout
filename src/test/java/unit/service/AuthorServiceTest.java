@@ -4,36 +4,61 @@ import com.entity.Author;
 import com.repository.AuthorRepo;
 import com.service.AuthorService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.testcontainers.shaded.org.checkerframework.checker.units.qual.A;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 public class AuthorServiceTest {
 
     AuthorRepo authorRepo = mock(AuthorRepo.class);
     AuthorService authorService = new AuthorService(authorRepo);
 
-    @Test
-    void buildAuthorRejectsInvalidInput() {
-        String invalidInput = "LastName_FirstName";
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "",
+            "LastName_FirstName",
+            "LastName MiddleName FirstName"
+    })
+    void buildAuthorRejectsInvalidInput(String input) {
         assertThrows(IllegalArgumentException.class,()->{
-            authorService.buildAuthor(invalidInput);
+            authorService.buildAuthor(input);
         });
     }
 
+
     @Test
-    void shouldBuildRecord(){
+    void shouldBuildAuthor(){
         String authorInput = "Test Author";
-        assertDoesNotThrow(()-> authorService.buildAuthor(authorInput));
+        Author builtAuthor = authorService.buildAuthor(authorInput);
+        assertEquals("Test", builtAuthor.getLastName());
+        assertEquals("Author", builtAuthor.getFirstName());
     }
 
     @Test
     void shouldCreateRecord() {
         Author newAuthor = new Author("Test", "Author");
-        assertDoesNotThrow(()->authorService.createRecord(newAuthor));
-        verify(authorRepo).createRecord(newAuthor);
+        when(authorService.createRecord(newAuthor)).thenReturn(newAuthor);
+        Author createdAuthor = authorService.createRecord(newAuthor);
+        assertEquals(createdAuthor, authorService.createRecord(newAuthor));
+        verify(authorService).createRecord(newAuthor);
+    }
+
+    @Test
+    void shouldReturnAllRecords(){
+        List<Author> storedAuthors = List.of(
+                new Author("Test", "Author One"),
+                new Author("Test", "Author Two"),
+                new Author("Test", "Author Three"));
+        when(authorService.getAllRecords()).thenReturn(storedAuthors);
+        assertEquals(authorService.getAllRecords(), storedAuthors);
+        verify(authorRepo).getAllRecords();
     }
 
 }
