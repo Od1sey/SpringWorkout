@@ -1,20 +1,30 @@
 package com.entity;
 
+import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
+@Entity
+@Table(name = "books")
 public class Book {
 
-    private int id;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id")
+    Author author;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
     private String name;
+    @Column(name="added_at")
     private LocalDateTime addedAt;
-    private int authorId;
+    @Column(name="publish_year")
     private int publishYear;
 
-    public Book(){
+    public Book() {
 
     }
 
-    public Book(String name, int publishYear){
+    public Book(String name, int publishYear) {
         this.name = name;
         this.publishYear = publishYear;
     }
@@ -23,10 +33,14 @@ public class Book {
         this.id = id;
         this.name = name;
         this.addedAt = addedAt;
-        this.authorId = authorId;
         this.publishYear = publishYear;
     }
 
+
+    @PrePersist
+    private void prepare() {
+        addedAt = LocalDateTime.now();
+    }
 
     public int getId() {
         return id;
@@ -52,19 +66,19 @@ public class Book {
         this.addedAt = addedAt;
     }
 
-    public int getAuthorId() {
-        return authorId;
-    }
-
-    public void setAuthorId(int authorId) {
-        this.authorId = authorId;
-    }
-
     public int getPublishYear() {
         return publishYear;
     }
 
     public void setPublishYear(int publishYear) {
         this.publishYear = publishYear;
+    }
+
+    public Author getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(Author author) {
+        this.author = author;
     }
 }

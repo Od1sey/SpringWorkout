@@ -3,6 +3,8 @@ package unit.service;
 import com.dto.AuthorWithBooksDTO;
 import com.entity.Author;
 import com.entity.Book;
+import com.repository.AuthorRepo;
+import com.repository.BookRepo;
 import com.service.AuthorService;
 import com.service.BookService;
 import com.service.LibraryService;
@@ -28,6 +30,10 @@ public class LibraryServiceTest {
     AuthorService authorService;
     @Mock
     BookService bookService;
+    @Mock
+    AuthorRepo authorRepo;
+    @Mock
+    BookRepo bookRepo;
     @InjectMocks
     LibraryService libraryService;
 
@@ -49,12 +55,12 @@ public class LibraryServiceTest {
         List<Book> existingAuthorBooks = List.of(
                 new Book("Test book 1", 2015),
                 new Book("Test Book 2", 2017));
-        when(authorService.getRecordById(authorId)).thenReturn(Optional.of(existingAuthor));
+        when(authorService.getRequiredById(authorId)).thenReturn(existingAuthor);
         when(bookService.getRecordsByAuthorId(authorId)).thenReturn(existingAuthorBooks);
         AuthorWithBooksDTO dto = libraryService.getAuthorBooks(id);
         assertEquals(existingAuthor, dto.getAuthor());
         assertEquals(existingAuthorBooks, dto.getBooks());
-        verify(authorService).getRecordById(authorId);
+        verify(authorService).getRequiredById(authorId);
         verify(bookService).getRecordsByAuthorId(authorId);
     }
 
@@ -75,10 +81,12 @@ public class LibraryServiceTest {
         int authorId = 5;
         int bookId = 5;
         String input = "%s,%s".formatted(bookId, authorId);
-        when(authorService.getRecordById(authorId)).thenReturn(
-                Optional.of(new Author("Test", "Author")));
-        when(bookService.getRecordById(bookId)).thenReturn(Optional.empty());
+        when(authorService.getRequiredById(authorId)).thenReturn(
+                new Author("Test", "Author"));
+        when(bookService.getRequiredById(bookId)).thenThrow(
+                new IllegalArgumentException("Book with id %s doesn't exist".formatted(bookId)));
         assertThrows(IllegalArgumentException.class, () -> libraryService.updateBookAuthor(input));
+        verify(bookService, never()).updateAuthor(any(Book.class), any(Author.class));
     }
 
     @Test
@@ -86,10 +94,9 @@ public class LibraryServiceTest {
         int authorId = 5;
         int bookId = 5;
         String input = "%s,%s".formatted(bookId, authorId);
-        when(authorService.getRecordById(authorId)).thenReturn(Optional.empty());
+        when(authorService.getRequiredById(authorId)).thenThrow(new IllegalArgumentException("Author with id %s doesn't exist".formatted(authorId)));
         assertThrows(IllegalArgumentException.class, () -> libraryService.updateBookAuthor(input));
-        verify(bookService, never())
-                .updateRecordAuthor(anyInt(), anyInt());
+        verify(bookService, never()).updateAuthor(any(Book.class), any(Author.class));
     }
 
     @Test
@@ -99,14 +106,13 @@ public class LibraryServiceTest {
         String input = "%s,%s".formatted(bookId, authorId);
         Author author = new Author("Test", "Author");
         Book book = new Book("Test book", 2015);
-        when(authorService.getRecordById(authorId)).thenReturn(
-                Optional.of(author));
-        when(bookService.getRecordById(bookId)).thenReturn(
-                Optional.of(book));
+        book.setId(bookId);
+        author.setId(authorId);
+        when(authorService.getRequiredById(authorId)).thenReturn(author);
+        when(bookService.getRequiredById(bookId)).thenReturn(book);
         libraryService.updateBookAuthor(input);
-        verify(authorService).getRecordById(authorId);
-        verify(bookService).getRecordById(bookId);
-        verify(bookService).updateRecordAuthor(bookId, authorId);
+        verify(bookService).getRequiredById(bookId);
+        verify(bookService).updateAuthor(book, author);
     }
 
     @Test
@@ -121,7 +127,8 @@ public class LibraryServiceTest {
     @Test
     void deleteAuthorShouldRejectUnknownAuthor() {
         int authorId = 5;
-        when(authorService.getRecordById(authorId)).thenReturn(Optional.empty());
+        when(authorService.getRequiredById(authorId)).thenThrow(
+                new IllegalArgumentException("Author with id %s doesn't exist".formatted(authorId)));
         assertThrows(IllegalArgumentException.class, () ->
                 libraryService.deleteAuthor(String.valueOf(authorId)));
         verifyNoInteractions(bookService);
@@ -131,7 +138,7 @@ public class LibraryServiceTest {
     void deleteAuthorShouldRejectAuthorWithBooks() {
         int authorId = 5;
         Author author = new Author("Test", "Author");
-        when(authorService.getRecordById(authorId)).thenReturn(Optional.of(author));
+        when(authorService.getRequiredById(authorId)).thenReturn(author);
         when(bookService.getRecordsByAuthorId(authorId)).thenReturn(List.of(
                 new Book("Existing book one", 2015),
                 new Book("Existing book one", 2015),
@@ -139,7 +146,7 @@ public class LibraryServiceTest {
         ));
         assertThrows(IllegalArgumentException.class, () ->
                 libraryService.deleteAuthor(String.valueOf(authorId)));
-        verify(authorService).getRecordById(authorId);
+        verify(authorService).getRequiredById(authorId);
         verify(bookService).getRecordsByAuthorId(authorId);
         verify(authorService, never()).delete(authorId);
     }
@@ -148,12 +155,12 @@ public class LibraryServiceTest {
     void shouldDeleteAuthor() {
         int authorId = 5;
         Author author = new Author("Test", "Author");
-        when(authorService.getRecordById(authorId)).thenReturn(Optional.of(author));
+        when(authorService.getRequiredById(authorId)).thenReturn(author);
         when(bookService.getRecordsByAuthorId(authorId)).thenReturn(List.of());
         assertDoesNotThrow(() -> {
             libraryService.deleteAuthor(String.valueOf(authorId));
         });
-        verify(authorService).getRecordById(authorId);
+        verify(authorService).getRequiredById(authorId);
         verify(bookService).getRecordsByAuthorId(authorId);
         verify(authorService).delete(authorId);
     }
@@ -180,23 +187,19 @@ public class LibraryServiceTest {
     void createAuthorWithBooksShouldCreateAuthorAndBook() {
         int authorId = 10;
         Author newAuthor = new Author("Test", "Author");
-        Author createdAuthor = new Author("Test", "Author");
-        createdAuthor.setId(authorId);
         Book book = new Book("Test book", 2015);
-        book.setAuthorId(authorId);
-        when(authorService.createRecord(newAuthor))
-                .thenReturn(createdAuthor);
-        when(bookService.buildBook("Test book, 2015, %s".formatted(authorId)))
+        when(bookService.buildBook("Test book, 2015"))
                 .thenReturn(book);
+        when(authorService.createRecord(newAuthor)).thenReturn(newAuthor);
         AuthorWithBooksDTO result =
                 libraryService.createAuthorWithBooks(
                         newAuthor,
                         "Test book, 2015"
                 );
-        assertEquals(createdAuthor, result.getAuthor());
+        assertEquals(newAuthor, result.getAuthor());
         assertEquals(List.of(book), result.getBooks());
         verify(authorService).createRecord(newAuthor);
-        verify(bookService).buildBook("Test book, 2015, %s".formatted(authorId));
-        verify(bookService).createRecord(book);
+        verify(bookService).buildBook("Test book, 2015");
+        verify(bookService, never()).createRecord(book);
     }
 }

@@ -6,64 +6,50 @@ import com.repository.AuthorRepo;
 import com.repository.BookRepo;
 import com.service.BookService;
 import integration.IntegrationTestBase;
-import org.junit.jupiter.api.BeforeAll;
+import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import unit.service.BookServiceTest;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Testcontainers
+@SpringJUnitConfig(IntegrationTestConfig.class)
 public class BookServiceIntegrationTest extends IntegrationTestBase {
 
-    @Container
-    static PostgreSQLContainer postgres =
-            new PostgreSQLContainer("postgres:16");
+    @Autowired
+    BookRepo bookRepo;
+    @Autowired
+    BookService bookService;
+    @Autowired
+    AuthorRepo authorRepo;
 
-    static JdbcTemplate jdbcTemplate;
-    static BookRepo bookRepo;
-    static BookService bookService;
-    static AuthorRepo authorRepo;
+    Author testAuthor;
 
-    static Author testAuthor;
-
-    @BeforeAll
-    static void setUp() {
-        DriverManagerDataSource dataSource =
-                new DriverManagerDataSource();
-        jdbcTemplate = new JdbcTemplate(dataSource);
-        dataSource.setUrl(postgres.getJdbcUrl());
-        dataSource.setUsername(postgres.getUsername());
-        dataSource.setPassword(postgres.getPassword());
-
-        authorRepo = new AuthorRepo(jdbcTemplate);
-        bookRepo = new BookRepo(jdbcTemplate);
-
-        authorRepo.initiateDatabase();
-        bookRepo.initiateDatabase();
-
-        bookService = new BookService(bookRepo);
-
+    @BeforeEach
+    void setUp() {
         testAuthor = new Author("Initial", "Author");
-        testAuthor = authorRepo.createRecord(testAuthor);
+        testAuthor = authorRepo.save(testAuthor);
     }
 
     @Test
+    @Transactional
     void shouldCreateBook() {
         Book newBook = new Book("Test book", 2025);
-        newBook.setAuthorId(testAuthor.getId());
+        newBook.setAuthor(testAuthor);
         bookService.createRecord(newBook);
         List<Book> books = bookService.getAllRecords();
-
         assertEquals(1, books.size());
-        assertEquals(newBook.getName(), books.getFirst().getName());
-        assertEquals(newBook.getPublishYear(), books.getFirst().getPublishYear());
-        assertEquals(newBook.getAuthorId(), books.getFirst().getAuthorId());
+        Book savedBook = books.getFirst();
+        assertEquals(newBook.getName(), savedBook.getName());
+        assertEquals(newBook.getPublishYear(), savedBook.getPublishYear());
+        assertEquals(
+                testAuthor.getId(),
+                savedBook.getAuthor().getId()
+        );
     }
 
 }
