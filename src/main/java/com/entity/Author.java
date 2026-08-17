@@ -1,14 +1,33 @@
 package com.entity;
 
-import java.time.LocalDateTime;
+import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "authors")
 public class Author {
 
-    private int id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+    @Column(name = "first_name")
     private String firstName;
+    @Column(name = "last_name")
     private String lastName;
+    @Column(name = "full_name")
     private String fullName;
+    @Column(name="added_at")
     private LocalDateTime addedAt;
+
+    @OneToMany(
+            mappedBy = "author",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY
+    )
+    private List<Book> books = new ArrayList<>();
 
     public Author() {
 
@@ -26,6 +45,11 @@ public class Author {
         this.lastName = lastName;
         this.fullName = fullName;
         this.addedAt = addedAt;
+    }
+
+    @PrePersist
+    private void prepare() {
+        addedAt = LocalDateTime.now();
     }
 
     public int getId() {
@@ -52,12 +76,12 @@ public class Author {
         this.lastName = lastName;
     }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
     public String getFullName() {
         return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
     public LocalDateTime getAddedAt() {
@@ -66,6 +90,19 @@ public class Author {
 
     public void setAddedAt(LocalDateTime addedAt) {
         this.addedAt = addedAt;
+    }
+
+    public List<Book> getBooks() {
+        return books;
+    }
+
+    public void setBooks(List<Book> books) {
+        this.books = books;
+    }
+
+    public void addBook(Book book){
+        book.setAuthor(this);
+        books.add(book);
     }
 
     @Override

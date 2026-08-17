@@ -4,19 +4,26 @@ import com.entity.Book;
 import com.repository.BookRepo;
 import com.service.BookService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 public class BookServiceTest {
 
-    BookRepo bookRepo = mock(BookRepo.class);
-    BookService bookService = new BookService(bookRepo);
+    @Mock
+    BookRepo bookRepo;
+    @InjectMocks
+    BookService bookService;
 
     @Test
     void createRecord() {
@@ -24,7 +31,7 @@ public class BookServiceTest {
         assertDoesNotThrow(() -> {
             bookService.createRecord(newBook);
         });
-        verify(bookRepo).create(newBook);
+        verify(bookRepo).save(newBook);
     }
 
     @ParameterizedTest
@@ -40,11 +47,10 @@ public class BookServiceTest {
 
     @Test
     void shouldBuildBook() {
-        String bookInput = "Book name, 2015, 1";
+        String bookInput = "Book name, 2015";
         Book builtBook = bookService.buildBook(bookInput);
         assertEquals("Book name", builtBook.getName());
         assertEquals(2015, builtBook.getPublishYear());
-        assertEquals(1, builtBook.getAuthorId());
     }
 
     @Test
@@ -52,9 +58,9 @@ public class BookServiceTest {
         List<Book> mockBooks = List.of(
                 new Book("First test book", 2025),
                 new Book("Second test book", 2026));
-        when(bookRepo.getAll()).thenReturn(mockBooks);
-        assertEquals(bookRepo.getAll(), mockBooks);
-        verify(bookService).getAllRecords();
+        when(bookRepo.findAll()).thenReturn(mockBooks);
+        assertEquals(bookRepo.findAll(), mockBooks);
+        verify(bookRepo).findAll();
     }
 
     @ParameterizedTest

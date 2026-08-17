@@ -1,5 +1,6 @@
 package com.service;
 
+import com.entity.Author;
 import com.entity.Book;
 import com.repository.BookRepo;
 import com.util.ParseUtils;
@@ -21,39 +22,27 @@ public class BookService {
 
     public Book buildBook(String bookInfo) {
         String[] parts = bookInfo.split("\\s*,\\s*");
-        String name = parts[0];
-        int publishYear;
-        int authorId;
-        if (parts.length!=3){
+        if (parts.length != 2) {
             throw new IllegalArgumentException("Wrong book info provided.");
         }
-        try {
-            publishYear = Integer.parseInt(parts[1]);
-        } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException("%s is not a valid year".formatted(parts[1]));
-        }
-        try {
-            authorId = Integer.parseInt(parts[2]);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("%s is not a valid author id".formatted(parts[2]));
-        }
-        if (name == null || name.isBlank()) {
+        String name = parts[0];
+        int publishYear = ParseUtils.parseInt(parts[1], "%s is not a valid year".formatted(parts[1]));
+        if (name.isBlank()) {
             throw new IllegalArgumentException("Book name cannot be blank");
         }
         if (name.length() < 3) {
             throw new IllegalArgumentException("Book name must be at least 3 characters long");
         }
-        Book newBook = new Book(parts[0], publishYear);
-        newBook.setAuthorId(authorId);
-        return newBook;
+
+        return new Book(name, publishYear);
     }
 
     public void createRecord(Book book) {
-        bookRepo.create(book);
+        bookRepo.save(book);
     }
 
     public List<Book> getAllRecords() {
-        return bookRepo.getAll();
+        return bookRepo.findAll();
     }
 
     public List<Book> getRecordsByQuery(String query) {
@@ -63,24 +52,38 @@ public class BookService {
         if (query.length() < 3) {
             throw new IllegalArgumentException("Query must be at least 3 characters long");
         }
-        return bookRepo.getRecordsByQuery(query);
+        if ("author".equalsIgnoreCase(query)) {
+            return bookRepo.findByAuthorFullName(query);
+        } else {
+            return bookRepo.findByNameContaining(query);
+        }
     }
 
     public Optional<Book> getRecordById(int id) {
-        return bookRepo.getRecordById(id);
+        return bookRepo.findById(id);
     }
 
-    public void updateRecordAuthor(int bookId, int authorId) {
-        bookRepo.updateBookAuthor(bookId, authorId);
+    public Book getRequiredById(int id) {
+        return getRecordById(id).orElseThrow(() ->
+                new IllegalArgumentException("Book with id %s doesn't exist".formatted(id)));
     }
 
     public void deleteRecord(String id) {
-        int bookId = ParseUtils.parseInt(id, "Book id should be number");
-        bookRepo.deleteRecord(bookId);
+        int bookId = ParseUtils.parseInt(id, "Book id should be a number");
+        bookRepo.delete(getRequiredById(bookId));
     }
 
     public List<Book> getRecordsByAuthorId(int id) {
-        return bookRepo.getRecordsByAuthorId(id);
+        return bookRepo.findByAuthorId(id);
+    }
+
+    public List<Book> getRecordsByAuthorFullName(String query) {
+        return bookRepo.findByAuthorFullName(query);
+    }
+
+    public void updateAuthor(Book book, Author author){
+        book.setAuthor(author);
+        bookRepo.save(book);
     }
 
 }

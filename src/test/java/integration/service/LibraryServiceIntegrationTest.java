@@ -7,18 +7,18 @@ import com.service.AuthorService;
 import com.service.BookService;
 import com.service.LibraryService;
 import integration.IntegrationTestBase;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringJUnitConfig(LibraryServiceTestConfig.class)
+@SpringJUnitConfig(IntegrationTestConfig.class)
 class LibraryServiceIntegrationTest extends IntegrationTestBase {
 
     @Autowired
@@ -29,11 +29,6 @@ class LibraryServiceIntegrationTest extends IntegrationTestBase {
     BookService bookService;
     @Autowired
     JdbcTemplate jdbcTemplate;
-
-    @BeforeEach
-    void cleanUp() {
-        jdbcTemplate.execute("TRUNCATE TABLE books, authors RESTART IDENTITY CASCADE");
-    }
 
     @Test
     void shouldCreateAuthorWithTwoBooks() {

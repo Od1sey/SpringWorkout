@@ -5,21 +5,26 @@ import com.repository.BookRepo;
 import com.service.AuthorService;
 import com.service.BookService;
 import com.service.LibraryService;
+import jakarta.persistence.EntityManagerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
+import java.util.Properties;
 
 @Configuration
+@EnableJpaRepositories(basePackages = "com.repository")
 @EnableTransactionManagement
-public class LibraryServiceTestConfig {
+public class IntegrationTestConfig {
 
     @Bean
     DataSource dataSource(
@@ -40,15 +45,18 @@ public class LibraryServiceTestConfig {
         return new JdbcTemplate(dataSource);
     }
 
-    @Bean(initMethod = "initiateDatabase")
-    AuthorRepo authorRepo(JdbcTemplate jdbcTemplate) {
-        return new AuthorRepo(jdbcTemplate);
-    }
+    @Bean
+    LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource) {
+        LocalContainerEntityManagerFactoryBean factory =
+                new LocalContainerEntityManagerFactoryBean();
+        factory.setDataSource(dataSource);
+        factory.setPackagesToScan("com.entity");
+        factory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
+        Properties properties = new Properties();
+        properties.setProperty("hibernate.hbm2ddl.auto", "create-drop");
+        factory.setJpaProperties(properties);
 
-    @Bean(initMethod = "initiateDatabase")
-    @DependsOn("authorRepo")
-    BookRepo bookRepo(JdbcTemplate jdbcTemplate) {
-        return new BookRepo(jdbcTemplate);
+        return factory;
     }
 
     @Bean
@@ -67,7 +75,7 @@ public class LibraryServiceTestConfig {
     }
 
     @Bean
-    PlatformTransactionManager transactionManager(DataSource dataSource) {
-        return new DataSourceTransactionManager(dataSource);
+    PlatformTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
+        return new JpaTransactionManager(entityManagerFactory);
     }
 }

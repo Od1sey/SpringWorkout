@@ -32,7 +32,8 @@ public class AuthorController {
                     Type "add" to add a record\s
                     Type "list" to list all records\s
                     Type "find" to find a record\s
-                    Type "delete" to delete author \s
+                    Type "delete" to delete author\s
+                    Type "update" to update author name\s
                     Type "return" to exit return to main menu\s
                     
                     ===========
@@ -44,6 +45,7 @@ public class AuthorController {
                 case "list" -> printAllRecords();
                 case "find" -> startFindRecordMenu();
                 case "delete" -> startDeleteRecordMenu();
+                case "update" -> startUpdateRecordMenu();
                 case "return" -> isRunning = false;
                 default -> System.out.printf("Unknown \"%s\" command. Try again.", input);
             }
@@ -193,9 +195,9 @@ public class AuthorController {
                         try {
                             AuthorWithBooksDTO dto = libraryService.createAuthorWithBooks(newAuthor, input);
                             String message = dto.getBooks().isEmpty()
-                            ? "Author %s was added".formatted(newAuthor.getFullName())
-                            : "Author %s was added along with %d books".formatted(newAuthor.getFirstName(), dto.getBooks().size());
-                                System.out.println(message);
+                                    ? "Author %s was added".formatted(newAuthor.getFullName())
+                                    : "Author %s was added along with %d books".formatted(newAuthor.getFirstName(), dto.getBooks().size());
+                            System.out.println(message);
                             isAddingBookList = false;
                             isAddingBooks = false;
                         } catch (IllegalArgumentException ex) {
@@ -203,10 +205,40 @@ public class AuthorController {
                         }
                     }
                 }
-            } else if ("n".equalsIgnoreCase(input)){
+            } else if ("n".equalsIgnoreCase(input)) {
                 authorService.createRecord(newAuthor);
                 System.out.println(newAuthor.getFullName() + " was added");
                 isAddingBooks = false;
+            }
+        }
+    }
+
+    private void startUpdateRecordMenu() {
+        boolean isUpdatingRecord = true;
+        while (isUpdatingRecord) {
+            System.out.print("""
+                    
+                    === Author menu ====
+                    
+                    Type id of the author you
+                    would like to update.
+                    
+                    Type "return" to exit this menu.
+                    
+                    ==========================
+                    
+                    """);
+            String input = scanner.nextLine().trim();
+            if ("return".equalsIgnoreCase(input)) {
+                isUpdatingRecord = false;
+            } else {
+                try {
+                    authorService.updateAuthorFullName(input);
+                    System.out.println("Author's name was changed");
+                    isUpdatingRecord = false;
+                } catch (IllegalArgumentException ex) {
+                    System.out.println("\n" + ex.getMessage() + "\n");
+                }
             }
         }
     }

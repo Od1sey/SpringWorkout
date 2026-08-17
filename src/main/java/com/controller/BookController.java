@@ -31,7 +31,7 @@ public class BookController {
                     
                     Type "add" to add a record\s
                     Type "list" to list all records\s
-                    Type "find" to find a record\s
+                    Type "find" to find records\s
                     Type "move" to move record from one author to another \s
                     Type "delete" to delete the record \s
                     Type "return" to return to main menu\s
@@ -48,70 +48,6 @@ public class BookController {
                 case "delete" -> startDeleteRecordMenu();
                 case "return" -> isRunning = false;
                 default -> System.out.println("Unknown command. Try again.");
-            }
-        }
-    }
-
-    private void startNewRecordMenu() {
-        boolean isAddingNewRecord = true;
-        while (isAddingNewRecord) {
-            System.out.print("""
-                    
-                    === Adding a book record ===\s
-                    
-                    Please enter name of a book,
-                    it's publish year and author id below.
-                    Separate values with comma.
-                    
-                    Example: Book Name, 2020, 2
-                    
-                    Type "return" to exit this menu
-                    
-                    =========================
-                    
-                    """);
-            String input = scanner.nextLine().trim();
-            if ("return".equals(input)) {
-                isAddingNewRecord = false;
-            } else {
-                try {
-                    Book book = bookService.buildBook(input);
-                    bookService.createRecord(book);
-                    System.out.printf("Book with name %s was added \n", book.getName());
-                    isAddingNewRecord = false;
-                } catch (IllegalArgumentException ex) {
-                    System.out.println("\n" + ex.getMessage() + "\n");
-                }
-            }
-        }
-    }
-
-    private void listAllRecords() {
-        displayList(bookService.getAllRecords());
-    }
-
-    private void startFindRecordMenu() {
-        boolean isFindingRecord = true;
-        while (isFindingRecord) {
-            System.out.print("""
-                    
-                    === Lookup for a book record ===\s
-                    
-                    Please enter name of a book and below
-                    or "return" to exit this menu
-                    
-                    ===========================
-                    
-                    """);
-            String input = scanner.nextLine().trim();
-            if ("return".equals(input)) {
-                isFindingRecord = false;
-            } else {
-                try {
-                    displayList(bookService.getRecordsByQuery(input));
-                } catch (IllegalArgumentException ex) {
-                    System.out.println("\n" + ex.getMessage() + "\n");
-                }
             }
         }
     }
@@ -175,6 +111,96 @@ public class BookController {
                 } catch (IllegalArgumentException ex) {
                     System.out.println("\n" + ex.getMessage() + "\n");
                 }
+            }
+        }
+    }
+
+    private void startNewRecordMenu() {
+        boolean isAddingNewRecord = true;
+        while (isAddingNewRecord) {
+            System.out.print("""
+                    
+                    === Adding a book record ===\s
+                    
+                    Please enter name of a book,
+                    it's publish year and author id below.
+                    Separate values with comma.
+                    
+                    Example: Book Name, 2020, 2
+                    
+                    Type "return" to exit this menu
+                    
+                    =========================
+                    
+                    """);
+            String input = scanner.nextLine().trim();
+            if ("return".equals(input)) {
+                isAddingNewRecord = false;
+            } else {
+                try {
+                    Book book = libraryService.createBookForAuthor(input);
+                    bookService.createRecord(book);
+                    System.out.printf("Book with name %s was added \n", book.getName());
+                    isAddingNewRecord = false;
+                } catch (IllegalArgumentException ex) {
+                    System.out.println("\n" + ex.getMessage() + "\n");
+                }
+            }
+        }
+    }
+
+    private void listAllRecords() {
+        displayList(bookService.getAllRecords());
+    }
+
+    private void startFindRecordMenu() {
+        boolean isFindingRecord = true;
+        while (isFindingRecord) {
+            System.out.print("""
+                    
+                    === Find Books ===
+                    
+                    How would you like to search?
+                    
+                    Type "name" to search by book name
+                    Type "author" to search by author name
+                    Type "return" to exit this menu
+                    
+                    ==================
+                    
+                    """);
+            String input = scanner.nextLine().trim();
+            if ("return".equals(input)) {
+                isFindingRecord = false;
+            } else if (input.equalsIgnoreCase("author") ||
+                    input.equalsIgnoreCase("name")) {
+                boolean isParamFindingRecord = true;
+                while (isParamFindingRecord) {
+                    System.out.print("""
+                            
+                            === Find Books ===
+                            
+                            Please enter book %s below
+                            to start the search
+                            
+                            Type "return" to exit this menu
+                            ==================
+                            
+                            """.formatted(input));
+                    String query = scanner.nextLine().trim();
+                    if ("return".equals(query)) {
+                        isParamFindingRecord = false;
+                    }
+                    try {
+                        displayList(bookService.getRecordsByQuery(query));
+                        isParamFindingRecord = false;
+                        isFindingRecord = false;
+                    } catch (IllegalArgumentException ex) {
+                        System.out.println("\n" + ex.getMessage() + "\n");
+                    }
+                }
+            } else {
+                System.out.println("Unknown param for the search. Please try again.");
             }
         }
     }

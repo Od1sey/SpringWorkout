@@ -13,12 +13,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class ConsoleApp {
     static void main() {
         AnnotationConfigApplicationContext appContext = new AnnotationConfigApplicationContext(ConsoleApp.class);
-        BookRepo bookRepo = appContext.getBean(BookRepo.class);
-        AuthorRepo authorRepo = appContext.getBean(AuthorRepo.class);
         MainMenuController mainMenuController = appContext.getBean(MainMenuController.class);
-
-        bookRepo.initiateDatabase();
-        authorRepo.initiateDatabase();
 
         mainMenuController.startMenu();
 
