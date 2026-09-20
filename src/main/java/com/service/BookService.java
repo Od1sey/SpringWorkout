@@ -2,10 +2,11 @@ package com.service;
 
 import com.entity.Author;
 import com.entity.Book;
+import com.exception.RecordNotFoundException;
 import com.repository.BookRepo;
-import com.util.ParseUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,49 +15,29 @@ import java.util.Optional;
 public class BookService {
 
     private final BookRepo bookRepo;
+    private final AuthorService authorService;
 
     @Autowired
-    public BookService(BookRepo bookRepo) {
+    public BookService(BookRepo bookRepo, AuthorService authorService) {
         this.bookRepo = bookRepo;
+        this.authorService = authorService;
     }
 
-    public Book buildBook(String bookInfo) {
-        String[] parts = bookInfo.split("\\s*,\\s*");
-        if (parts.length != 2) {
-            throw new IllegalArgumentException("Wrong book info provided.");
-        }
-        String name = parts[0];
-        int publishYear = ParseUtils.parseInt(parts[1], "%s is not a valid year".formatted(parts[1]));
-        if (name.isBlank()) {
-            throw new IllegalArgumentException("Book name cannot be blank");
-        }
-        if (name.length() < 3) {
-            throw new IllegalArgumentException("Book name must be at least 3 characters long");
-        }
-
-        return new Book(name, publishYear);
+    @Transactional
+    public Book createRecord(Book book) {
+        Author author = authorService.getRequiredById(book.getAuthor().getId());
+        book.setAuthor(author);
+        return bookRepo.save(book);
     }
 
-    public void createRecord(Book book) {
-        bookRepo.save(book);
-    }
-
+    @Transactional(readOnly = true)
     public List<Book> getAllRecords() {
-        return bookRepo.findAll();
+        return bookRepo.findAllWithAuthors();
     }
 
+    @Transactional(readOnly = true)
     public List<Book> getRecordsByQuery(String query) {
-        if (query == null || query.isBlank()) {
-            throw new IllegalArgumentException("Query cannot be blank");
-        }
-        if (query.length() < 3) {
-            throw new IllegalArgumentException("Query must be at least 3 characters long");
-        }
-        if ("author".equalsIgnoreCase(query)) {
-            return bookRepo.findByAuthorFullName(query);
-        } else {
-            return bookRepo.findByNameContaining(query);
-        }
+        return bookRepo.findByNameContaining(query);
     }
 
     public Optional<Book> getRecordById(int id) {
@@ -65,25 +46,26 @@ public class BookService {
 
     public Book getRequiredById(int id) {
         return getRecordById(id).orElseThrow(() ->
-                new IllegalArgumentException("Book with id %s doesn't exist".formatted(id)));
+                new RecordNotFoundException("Book", id));
     }
 
-    public void deleteRecord(String id) {
-        int bookId = ParseUtils.parseInt(id, "Book id should be a number");
-        bookRepo.delete(getRequiredById(bookId));
+    public void deleteRecord(int id) {
+        bookRepo.delete(getRequiredById(id));
     }
 
-    public List<Book> getRecordsByAuthorId(int id) {
-        return bookRepo.findByAuthorId(id);
-    }
-
-    public List<Book> getRecordsByAuthorFullName(String query) {
-        return bookRepo.findByAuthorFullName(query);
-    }
-
-    public void updateAuthor(Book book, Author author){
-        book.setAuthor(author);
+    @Transactional
+    public Book updateRecord(Integer id, Book bookInfo) {
+        Book book = getRequiredById(id);
+        if (bookInfo.getAuthor()!=null){
+            Author author = authorService.getRequiredById(bookInfo.getAuthor().getId());
+            book.setAuthor(author);
+        }
+        book.setName(bookInfo.getName());
+        book.setPublishYear(bookInfo.getPublishYear());
         bookRepo.save(book);
+        return book;
     }
+
+
 
 }

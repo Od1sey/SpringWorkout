@@ -4,7 +4,6 @@ import com.repository.AuthorRepo;
 import com.repository.BookRepo;
 import com.service.AuthorService;
 import com.service.BookService;
-import com.service.LibraryService;
 import jakarta.persistence.EntityManagerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -65,13 +64,8 @@ public class IntegrationTestConfig {
     }
 
     @Bean
-    BookService bookService(BookRepo bookRepo) {
-        return new BookService(bookRepo);
-    }
-
-    @Bean
-    LibraryService libraryService(AuthorService authorService, BookService bookService) {
-        return new LibraryService(authorService, bookService);
+    BookService bookService(BookRepo bookRepo, AuthorService authorService) {
+        return new BookService(bookRepo, authorService);
     }
 
     @Bean

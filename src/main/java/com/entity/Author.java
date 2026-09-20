@@ -19,8 +19,10 @@ public class Author {
     private String lastName;
     @Column(name = "full_name")
     private String fullName;
-    @Column(name="added_at")
+    @Column(name = "added_at")
     private LocalDateTime addedAt;
+    @Version
+    private Integer version;
 
     @OneToMany(
             mappedBy = "author",
@@ -33,13 +35,24 @@ public class Author {
 
     }
 
+    public Author(Integer id) {
+        this.id = id;
+    }
+
     public Author(String lastName, String firstName) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.fullName = lastName + " " + firstName;
     }
 
-    public Author(int id, String firstName, String lastName, String fullName, LocalDateTime addedAt) {
+    public Author(String lastName, String firstName, List<Book> books) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.fullName = lastName + " " + firstName;
+        this.books = books;
+    }
+
+    public Author(Integer id, String firstName, String lastName, String fullName, LocalDateTime addedAt) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -52,11 +65,11 @@ public class Author {
         addedAt = LocalDateTime.now();
     }
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -100,7 +113,15 @@ public class Author {
         this.books = books;
     }
 
-    public void addBook(Book book){
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
+    }
+
+    public void addBook(Book book) {
         book.setAuthor(this);
         books.add(book);
     }

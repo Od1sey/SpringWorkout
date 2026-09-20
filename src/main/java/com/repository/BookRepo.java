@@ -12,12 +12,20 @@ import java.util.List;
 public interface BookRepo extends JpaRepository<Book, Integer> {
 
     List<Book> findByAuthorId(int id);
-    List<Book> findByNameContaining(String text);
 
     @Query("""
-        SELECT b FROM Book b
-        WHERE LOWER(b.author.fullName)
-        LIKE LOWER(CONCAT('%', :name, '%'))
-        """)
-    List<Book> findByAuthorFullName(@Param("name") String name);
+            select b
+            from Book b
+            join fetch b.author
+            where lower(b.name)
+            like lower(concat('%', :text, '%'))
+            """)
+    List<Book> findByNameContaining(@Param("text") String text);
+
+    @Query("""
+            select b
+            from Book b
+            join fetch b.author
+            """)
+    List<Book> findAllWithAuthors();
 }
