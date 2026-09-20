@@ -29,13 +29,12 @@ public class Book {
         this.publishYear = publishYear;
     }
 
-    public Book(int id, String name, LocalDateTime addedAt, int authorId, int publishYear) {
+    public Book(int id, String name, LocalDateTime addedAt,  int publishYear) {
         this.id = id;
         this.name = name;
         this.addedAt = addedAt;
         this.publishYear = publishYear;
     }
-
 
     @PrePersist
     private void prepare() {

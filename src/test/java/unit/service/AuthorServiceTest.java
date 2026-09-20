@@ -1,15 +1,15 @@
 package unit.service;
 
 import com.entity.Author;
+import com.entity.Book;
+import com.exception.RecordNotFoundException;
 import com.repository.AuthorRepo;
 import com.service.AuthorService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.testcontainers.shaded.org.checkerframework.checker.units.qual.A;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,29 +21,10 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class AuthorServiceTest {
 
-    AuthorRepo authorRepo = mock(AuthorRepo.class);
-    AuthorService authorService = new AuthorService(authorRepo);
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "",
-            "LastName_FirstName",
-            "LastName MiddleName FirstName"
-    })
-    void buildAuthorRejectsInvalidInput(String input) {
-        assertThrows(IllegalArgumentException.class,()->{
-            authorService.buildAuthor(input);
-        });
-    }
-
-
-    @Test
-    void shouldBuildAuthor(){
-        String authorInput = "Test Author";
-        Author builtAuthor = authorService.buildAuthor(authorInput);
-        assertEquals("Test", builtAuthor.getLastName());
-        assertEquals("Author", builtAuthor.getFirstName());
-    }
+    @Mock
+    AuthorRepo authorRepo ;
+    @InjectMocks
+    AuthorService authorService;
 
     @Test
     void shouldCreateRecord() {
@@ -51,35 +32,108 @@ public class AuthorServiceTest {
         when(authorRepo.save(newAuthor)).thenReturn(newAuthor);
         Author createdAuthor = authorService.createRecord(newAuthor);
         assertEquals(newAuthor, createdAuthor);
+
         verify(authorRepo).save(newAuthor);
     }
 
     @Test
-    void shouldReturnAllRecords() {
-        List<Author> storedAuthors = List.of(
-                new Author("Test", "Author One"),
-                new Author("Test", "Author Two"),
-                new Author("Test", "Author Three")
-        );
+    void getReturnAllRecords() {
+        Author author1 = new Author();
+        Author author2 = new Author();
+
+        List<Author> authors = List.of(author1, author2);
         when(authorRepo.findAll())
-                .thenReturn(storedAuthors);
+                .thenReturn(authors);
         List<Author> result = authorService.getAllRecords();
-        assertEquals(storedAuthors, result);
+        assertSame(authors, result);
+
         verify(authorRepo).findAll();
     }
 
     @Test
-    void shouldUpdateAuthorFullName() {
-        int authorId = 5;
-        Author author = new Author("Old", "Name");
-        author.setId(authorId);
-        when(authorRepo.findById(authorId))
+    void shouldUpdateAuthorName(){
+        int id = 1;
+
+        Author existingAuthor = new Author(
+                "Existing", "Author"
+        );
+        Author updateRequest = new Author(
+                "Updated", "Author"
+        );
+
+        when(authorRepo.findById(id)).thenReturn(Optional.of(existingAuthor));
+        Author result = authorService.updateAuthorName(id, updateRequest);
+
+        assertSame(existingAuthor, result);
+        assertEquals("Updated", result.getLastName());
+        assertEquals("Author", result.getFirstName());
+        assertEquals("Updated Author", result.getFullName());
+
+        verify(authorRepo).findById(id);
+    }
+
+    @Test
+    void shouldReturnAuthorWithBookList(){
+        int id = 1;
+
+        Book book1 = new Book();
+        Book book2 = new Book();
+
+        List<Book> originalBooks = new ArrayList<>();
+        originalBooks.add(book1);
+        originalBooks.add(book2);
+        Author author = new Author();
+        author.setBooks(originalBooks);
+
+        when(authorRepo.findById(id))
                 .thenReturn(Optional.of(author));
-        authorService.updateAuthorFullName("5, NewLastName NewFirstName");
-        assertEquals("NewLastName", author.getLastName());
-        assertEquals("NewFirstName", author.getFirstName());
-        assertEquals("NewLastName NewFirstName", author.getFullName());
-        verify(authorRepo).findById(authorId);
+        Author result = authorService.getAuthor(id);
+        assertSame(author, result);
+
+        assertEquals(2, result.getBooks().size());
+        assertEquals(originalBooks, result.getBooks());
+        assertNotSame(originalBooks, result.getBooks());
+
+        verify(authorRepo).findById(id);
+    }
+
+    @Test
+    void getAuthorShouldThrowRecordNotFoundException(){
+        int id = 1000;
+
+        when(authorRepo.findById(id)).thenReturn(Optional.empty());
+        assertThrows(RecordNotFoundException.class,
+                ()-> authorService.getAuthor(id));
+
+        verify(authorRepo).findById(id);
+    }
+
+    @Test
+    void deleteShouldDeleteExistingAuthor() {
+        int id = 1;
+
+        Author author = new Author();
+
+        when(authorRepo.findById(id))
+                .thenReturn(Optional.of(author));
+        authorService.delete(id);
+
+        verify(authorRepo).findById(id);
+        verify(authorRepo).delete(author);
+    }
+
+    @Test
+    void deleteShouldThrowWhenAuthorDoesNotExist() {
+        int id = 999;
+
+        when(authorRepo.findById(id))
+                .thenReturn(Optional.empty());
+        assertThrows(
+                RecordNotFoundException.class,
+                () -> authorService.delete(id)
+        );
+
+        verify(authorRepo, never()).delete(any());
     }
 
 }

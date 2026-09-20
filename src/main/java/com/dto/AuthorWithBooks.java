@@ -6,16 +6,16 @@ import com.entity.Book;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AuthorWithBooksDTO{
+public class AuthorWithBooks {
 
     private Author author;
     private List<Book> books = new ArrayList<>();
 
-    public AuthorWithBooksDTO(Author author){
+    public AuthorWithBooks(Author author){
         this.author = author;
     }
 
-    public AuthorWithBooksDTO(Author author, List<Book> books){
+    public AuthorWithBooks(Author author, List<Book> books){
         this.author = author;
         this.books = books;
     }
@@ -38,7 +38,7 @@ public class AuthorWithBooksDTO{
 
     @Override
     public String toString() {
-        return "AuthorWithBooksDTO{" +
+        return "AuthorWithBooks{" +
                 "author=" + author +
                 ", books=" + books +
                 '}';
