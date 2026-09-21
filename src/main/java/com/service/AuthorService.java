@@ -36,6 +36,7 @@ public class AuthorService {
     }
 
     @Transactional(readOnly = true)
+
     public Author getAuthor(int id) {
         var author = getRequiredById(id);
         author.setBooks(List.copyOf(author.getBooks()));

@@ -2,24 +2,21 @@ package integration.service;
 
 import com.entity.Author;
 import com.entity.Book;
+import com.exception.NoAvailableCopiesException;
 import com.repository.AuthorRepo;
 import com.repository.BookRepo;
 import com.service.BookService;
 import integration.IntegrationTestBase;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.RollbackException;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import unit.service.BookServiceTest;
 
-import java.util.List;
+import java.util.concurrent.*;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringJUnitConfig(IntegrationTestConfig.class)
 public class BookServiceIntegrationTest extends IntegrationTestBase {
@@ -30,8 +27,6 @@ public class BookServiceIntegrationTest extends IntegrationTestBase {
     BookService bookService;
     @Autowired
     AuthorRepo authorRepo;
-    @Autowired
-    EntityManagerFactory entityManagerFactory;
 
     Author testAuthor;
 
@@ -65,78 +60,46 @@ public class BookServiceIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    void shouldDeleteBook(){
-
-    }
-
-    @Test
-    void shouldFailWhenAuthorIsUpdatedSimultaneously() {
+    void shouldOnlyBorrowOneLastBookCopy() throws Exception {
         Author author = new Author("Initial", "Author");
         author = authorRepo.save(author);
+        Book book = new Book("Test book", 2025);
+        book.setAuthor(author);
+        book.setCopiesAmount(1);
 
-        Integer authorId = author.getId();
+        Book savedBook = bookService.createRecord(book);
+        Integer bookId = savedBook.getId();
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch latch = new CountDownLatch(1);
 
-        EntityManager entityManager1 = entityManagerFactory.createEntityManager();
-        EntityManager entityManager2 = entityManagerFactory.createEntityManager();
-
-        EntityTransaction transaction1 = entityManager1.getTransaction();
-        EntityTransaction transaction2 = entityManager2.getTransaction();
-
-        try {
-            transaction1.begin();
-            transaction2.begin();
-
-            Author authorFromTransaction1 =
-                    entityManager1.find(Author.class, authorId);
-
-            Author authorFromTransaction2 =
-                    entityManager2.find(Author.class, authorId);
-
-            assertEquals(
-                    authorFromTransaction1.getVersion(),
-                    authorFromTransaction2.getVersion()
-            );
-
-            Integer initialVersion = authorFromTransaction1.getVersion();
-
-            authorFromTransaction1.setFirstName("First");
-            authorFromTransaction2.setFirstName("Second");
-
-            assertDoesNotThrow(transaction1::commit);
-
-            assertThrows(
-                    RollbackException.class,
-                    transaction2::commit
-            );
-
-            try (EntityManager verificationEntityManager =
-                         entityManagerFactory.createEntityManager()) {
-
-                Author actual = verificationEntityManager.find(
-                        Author.class,
-                        authorId
-                );
-
-                assertEquals("First", actual.getFirstName());
-
-                assertEquals(
-                        initialVersion + 1,
-                        actual.getVersion()
-                );
+        Callable<Boolean> borrowTask = () -> {
+            latch.await();
+            try {
+                bookService.borrow(bookId);
+                return true;
+            } catch (NoAvailableCopiesException e) {
+                return false;
             }
+        };
 
-        } finally {
-            if (transaction1.isActive()) {
-                transaction1.rollback();
-            }
+        Future<Boolean> firstBorrow = executor.submit(borrowTask);
+        Future<Boolean> secondBorrow = executor.submit(borrowTask);
+        latch.countDown();
+        boolean firstResult = firstBorrow.get();
+        boolean secondResult = secondBorrow.get();
+        executor.shutdown();
 
-            if (transaction2.isActive()) {
-                transaction2.rollback();
-            }
-
-            entityManager1.close();
-            entityManager2.close();
+        int successfulBorrows = 0;
+        if (firstResult) {
+            successfulBorrows++;
         }
-    }
+        if (secondResult) {
+            successfulBorrows++;
+        }
 
+        assertEquals(1, successfulBorrows);
+        Book bookFromDb = bookRepo.findById(bookId)
+                .orElseThrow();
+        assertEquals(0, bookFromDb.getCopiesAmount());
+    }
 }

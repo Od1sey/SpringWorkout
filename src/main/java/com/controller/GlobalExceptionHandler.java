@@ -1,6 +1,7 @@
 package com.controller;
 
 import com.dto.CustomErrorResponse;
+import com.exception.NoAvailableCopiesException;
 import com.exception.RecordNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,14 @@ public class GlobalExceptionHandler {
         var error = new CustomErrorResponse("Bad request", null);
         return  ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
+                .body(error);
+    }
+
+    @ExceptionHandler(NoAvailableCopiesException.class)
+    public ResponseEntity<CustomErrorResponse> handleNoAvailableCopies(NoAvailableCopiesException ex){
+        var error = new CustomErrorResponse(ex.getMessage(), null);
+        return  ResponseEntity
+                .status(HttpStatus.CONFLICT)
                 .body(error);
     }
 

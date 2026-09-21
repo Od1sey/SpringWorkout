@@ -7,6 +7,7 @@ public record BookResponse(
         Integer id,
         Integer authorId,
         String name,
-        Integer publishYear
+        Integer publishYear,
+        Integer copies_amount
 ) {
 }

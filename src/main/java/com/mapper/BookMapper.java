@@ -20,7 +20,8 @@ public class BookMapper {
                 book.getId(),
                 book.getAuthor()!=null? book.getAuthor().getId() : null,
                 book.getName(),
-                book.getPublishYear()
+                book.getPublishYear(),
+                book.getCopiesAmount()
         );
     }
 

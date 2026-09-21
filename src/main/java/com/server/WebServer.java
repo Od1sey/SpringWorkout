@@ -1,9 +1,12 @@
 package com.server;
 
 import com.config.SpringWebConfig;
+import com.web.filter.RequestIdFilter;
 import org.apache.catalina.Context;
 import org.apache.catalina.Wrapper;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.tomcat.util.descriptor.web.FilterDef;
+import org.apache.tomcat.util.descriptor.web.FilterMap;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 import org.springframework.web.servlet.DispatcherServlet;
 
@@ -23,6 +26,16 @@ public final class WebServer {
         tomcat.setBaseDir(baseDir);
 
         Context tomcatContext = tomcat.addContext("", baseDir);
+
+        FilterDef filterDef = new FilterDef();
+        filterDef.setFilterName("requestIdFilter");
+        filterDef.setFilter(new RequestIdFilter());
+        tomcatContext.addFilterDef(filterDef);
+
+        FilterMap filterMap = new FilterMap();
+        filterMap.setFilterName("requestIdFilter");
+        filterMap.addURLPattern("/*");
+        tomcatContext.addFilterMap(filterMap);
 
         AnnotationConfigWebApplicationContext springContext = new AnnotationConfigWebApplicationContext();
 
