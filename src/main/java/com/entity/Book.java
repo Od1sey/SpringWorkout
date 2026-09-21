@@ -19,6 +19,8 @@ public class Book {
     private LocalDateTime addedAt;
     @Column(name="publish_year")
     private int publishYear;
+    @Column(name="copies_amount")
+    private int copiesAmount;
 
     public Book() {
 
@@ -39,6 +41,7 @@ public class Book {
     @PrePersist
     private void prepare() {
         addedAt = LocalDateTime.now();
+        copiesAmount = 1;
     }
 
     public int getId() {
@@ -79,5 +82,13 @@ public class Book {
 
     public void setAuthor(Author author) {
         this.author = author;
+    }
+
+    public int getCopiesAmount() {
+        return copiesAmount;
+    }
+
+    public void setCopiesAmount(int copiesAmount) {
+        this.copiesAmount = copiesAmount;
     }
 }

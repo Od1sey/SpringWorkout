@@ -2,8 +2,11 @@ package com.service;
 
 import com.entity.Author;
 import com.entity.Book;
+import com.exception.NoAvailableCopiesException;
 import com.exception.RecordNotFoundException;
 import com.repository.BookRepo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +17,7 @@ import java.util.Optional;
 @Service
 public class BookService {
 
+    private static final Logger log = LoggerFactory.getLogger(BookService.class);
     private final BookRepo bookRepo;
     private final AuthorService authorService;
 
@@ -66,6 +70,20 @@ public class BookService {
         return book;
     }
 
+    @Transactional
+    public Book borrow(Integer id){
+        Book book = bookRepo.findByIdForUpdate(id).orElseThrow(()->{
+            log.error("Error while book borrowing. Book with id {} doesn't exist", id);
+            return new RecordNotFoundException("Book", id);
+        });
 
+        if (book.getCopiesAmount()==0){
+            log.error("Error while book borrowing. Book with id {} has no copies left", id);
+            throw new NoAvailableCopiesException(id);
+        }
+        book.setCopiesAmount(book.getCopiesAmount() - 1); ;
+        log.info("Book borrow is successful. Book with id {} has {} copies left", id, book.getCopiesAmount());
+        return book;
+    }
 
 }

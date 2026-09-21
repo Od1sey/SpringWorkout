@@ -54,4 +54,12 @@ public class BookController {
         bookService.deleteRecord(id);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping(path = "/{id}/borrow")
+    public ResponseEntity<BookResponse> borrow(@PathVariable("id") int id){
+        var book = bookService.borrow(id);
+        var bookResponse = BookMapper.toDTO(book);
+        return ResponseEntity.ok().body(bookResponse);
+    }
+
 }
